@@ -1,0 +1,9 @@
+name: rogue_one
+dependencies:
+  angel_auth: ^1.1.0
+  angel_framework: ^1.1.0
+  angel_file_service: ^1.1.0
+  angel_hot: ^1.1.0
+  angel_security: ^1.0.0
+  glob: any
+  watcher: any
