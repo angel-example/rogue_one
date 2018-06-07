@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:angel_auth/angel_auth.dart';
 import 'package:angel_file_service/angel_file_service.dart';
@@ -7,6 +6,7 @@ import 'package:angel_framework/angel_framework.dart';
 import 'package:angel_framework/hooks.dart' as hooks;
 import 'package:angel_security/hooks.dart' as hooks;
 import 'package:crypto/crypto.dart';
+import 'package:dart2_constant/convert.dart';
 import 'package:file/local.dart';
 import 'models.dart';
 
@@ -57,7 +57,7 @@ Future configureServer(Angel app) async {
 
       if (user == null) return null;
 
-      var hash = BASE64.encode(sha256.convert(password.codeUnits).bytes);
+      var hash = base64.encode(sha256.convert(password.codeUnits).bytes);
 
       print(hash);
       print(password);
@@ -71,7 +71,7 @@ Future configureServer(Angel app) async {
 
   auth.serializer = (ForceSensitive user) => user.id;
 
-  auth.deserializer = (String id) => app
+  auth.deserializer = (id) => app
       .service('api/force_sensitives')
       .read(id)
       .then((map) => new ForceSensitive.fromMap(map));
@@ -84,14 +84,39 @@ Future configureServer(Angel app) async {
 
   app.post('/auth/register', (RequestContext req, ResponseContext res) async {
     String username = req.body['username'], password = req.body['password'];
-    var hash = BASE64.encode(sha256.convert(password.codeUnits).bytes);
+    var hash = base64.encode(sha256.convert(password.codeUnits).bytes);
     var user =
         new ForceSensitive(username: username, password: hash, isSith: true);
     return await app.service('api/force_sensitives').create(user.toJson());
   });
 
+  app.get('/', (ResponseContext res) {
+    res
+    ..contentType = ContentType.HTML
+    ..write('''
+    <!doctype html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ROGUE ONE</title>
+      </head>
+      <body>
+        <h1>Welcome to Rogue One</h1>
+        <a href="/plans">View evil plans (must authenticate first!!!)</a>
+      </body>
+    </html>
+    ''');
+  });
+
+  app.use(() => throw new AngelHttpException.notFound());
+
+  var oldErrorHandler = app.errorHandler;
   app.errorHandler = (e, req, res) {
-    print(e.toJson());
-    return res.streamFile(new File('web/Darth_Vader_rogue_one.jpg'));
+    if (req.accepts('image/jpeg')) {
+      print(e.toJson());
+      return res.streamFile(new File('web/Darth_Vader_rogue_one.jpg'));
+    } else {
+      return oldErrorHandler(e, req, res);
+    }
   };
 }
